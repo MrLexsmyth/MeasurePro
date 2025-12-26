@@ -19,10 +19,14 @@ export default function Topbar({
     <header className="h-16 bg-white flex items-center justify-between px-4 md:px-6 border-b">
       <div className="flex items-center gap-3">
         {/* MOBILE MENU */}
-        <button onClick={() => setOpen(true)} className="md:hidden text-xl">
-          ☰
-        </button>
-        <h1 className="font-semibold text-gray-700">Dashboard</h1>
+       <button
+  onClick={() => setOpen(true)}
+  className="md:hidden text-2xl p-3"
+>
+  ☰
+</button>
+
+        <h1 className="font-bold text-gray-700">Dashboard</h1>
       </div>
 
       <div className="flex items-center gap-4">

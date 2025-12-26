@@ -25,7 +25,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      <nav className="p-4 space-y-3 flex-1 flex flex-col">
+      <nav className="p-4 space-y-6 flex-1 flex flex-col">
         <Link href="/dashboard" onClick={() => setOpen(false)}>Dashboard</Link>
         <Link href="/dashboard/clients" onClick={() => setOpen(false)}>Customers</Link>
         <Link href="/dashboard/measurements" onClick={() => setOpen(false)}>Measurements</Link>
