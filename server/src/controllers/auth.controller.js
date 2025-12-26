@@ -43,11 +43,13 @@ export const login = async (req, res) => {
 
   const token = createToken(user._id);
 
-  res.cookie("token", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
+ res.cookie("token", token, {
+  httpOnly: true,
+  sameSite: "none",  //  REQUIRED for cross-domain
+  secure: true,      //  MUST be true when SameSite=None
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
+
 
   res.json({ message: "Logged in successfully" });
 };
