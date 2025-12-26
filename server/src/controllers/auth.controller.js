@@ -2,66 +2,95 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
+// Helper: create JWT
 const createToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 
+// ✅ Cookie options for cross-site Safari support
+const cookieOptions = {
+  httpOnly: true,
+  secure: true,      // MUST be true for SameSite=None
+  sameSite: "none",  // REQUIRED for cross-domain cookies
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
+
+// ==========================
+// REGISTER USER
+// ==========================
 export const register = async (req, res) => {
   const { shopName, email, password } = req.body;
 
-  const existing = await User.findOne({ email });
-  if (existing) return res.status(400).json({ message: "Email already in use" });
+  try {
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: "Email already in use" });
+    }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await User.create({
-    shopName,
-    email,
-    password: hashedPassword,
-  });
+    const user = await User.create({
+      shopName,
+      email,
+      password: hashedPassword,
+    });
 
-  const token = createToken(user._id);
+    const token = createToken(user._id);
 
-  res.cookie("token", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
+    res.cookie("token", token, cookieOptions);
 
-  res.status(201).json({ message: "Registered successfully" });
+    res.status(201).json({
+      message: "Registered successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
 
+// ==========================
+// LOGIN USER
+// ==========================
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) return res.status(400).json({ message: "Invalid credentials" });
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-  const token = createToken(user._id);
+    const token = createToken(user._id);
 
- res.cookie("token", token, {
-  httpOnly: true,
-  sameSite: "none",  //  REQUIRED for cross-domain
-  secure: true,      //  MUST be true when SameSite=None
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-});
+    res.cookie("token", token, cookieOptions);
 
-
-  res.json({ message: "Logged in successfully" });
+    res.json({ message: "Logged in successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
 
+// ==========================
+// GET CURRENT USER
+// ==========================
 export const getMe = async (req, res) => {
   try {
     const token = req.cookies.token;
-    if (!token) return res.status(401).json({ message: "Not authenticated" });
+    if (!token) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.userId).select("-password");
-    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     res.json(user);
   } catch (error) {
@@ -69,7 +98,10 @@ export const getMe = async (req, res) => {
   }
 };
 
+// ==========================
+// LOGOUT USER
+// ==========================
 export const logout = (req, res) => {
-  res.clearCookie("token");
+  res.clearCookie("token", cookieOptions);
   res.json({ message: "Logged out" });
 };
