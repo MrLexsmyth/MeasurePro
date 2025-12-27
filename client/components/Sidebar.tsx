@@ -28,7 +28,7 @@ export default function Sidebar({
       <nav className="p-4 space-y-6 flex-1 flex flex-col">
         <Link href="/dashboard" onClick={() => setOpen(false)}>Dashboard</Link>
         <Link href="/dashboard/clients" onClick={() => setOpen(false)}>Customers</Link>
-        <Link href="/dashboard/measurements" onClick={() => setOpen(false)}>Measurements</Link>
+       
       </nav>
     </aside>
   );
