@@ -30,7 +30,7 @@ export default function Topbar({
       </div>
 
       <div className="flex items-center gap-4">
-        <button onClick={handleLogout} className="text-red-600 text-xl">
+        <button onClick={handleLogout} className="text-red-600 text-sm">
           Logout
         </button>
       </div>
