@@ -60,17 +60,19 @@ export default function ClientsPage() {
       {displayedClients.length === 0 ? (
         <p>No clients found.</p>
       ) : (
-        <ul>
-          {displayedClients.map((client) => (
-            <li
-              key={client._id}
-              style={{ cursor: "pointer", margin: "8px 0" }}
-              onClick={() => router.push(`/dashboard/clients/${client._id}`)}
-            >
-              {client.name}
-            </li>
-          ))}
-        </ul>
+       <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white mt-6 w-70">
+  {displayedClients.map((client) => (
+    <li
+      key={client._id}
+      onClick={() => router.push(`/dashboard/clients/${client._id}`)}
+      className="cursor-pointer px-4 py-3 text-gray-700 transition hover:bg-gray-50"
+    >
+      <p className="font-medium">{client.name}</p>
+    </li>
+  ))}
+</ul>
+
+
       )}
     </div>
   );

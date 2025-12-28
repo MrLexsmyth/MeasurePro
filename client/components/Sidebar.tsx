@@ -19,7 +19,7 @@ export default function Sidebar({
       `}
     >
       <div className="p-6 font-bold text-xl border-b border-white/20 flex justify-between md:block">
-        MeasurePro 🧵
+        MeasurePro 
         <button onClick={() => setOpen(false)} className="md:hidden">
           ✕
         </button>
