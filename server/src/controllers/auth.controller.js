@@ -2,24 +2,19 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-// ==========================
-// GENERATE JWT + SET COOKIE
-// ==========================
-const generateToken = (res, userId) => {
-  const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
+// Helper: create JWT
+const createToken = (userId) =>
+  jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
   });
 
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: true,      
-    sameSite: "none",    
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-
-  return token;
+// ✅ Cookie options for cross-site Safari support
+const cookieOptions = {
+  httpOnly: true,
+  secure: true,      // MUST be true for SameSite=None
+  sameSite: "none",  // REQUIRED for cross-domain cookies
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
-
 
 // ==========================
 // REGISTER USER
@@ -28,24 +23,25 @@ export const register = async (req, res) => {
   const { shopName, email, password } = req.body;
 
   try {
-    const userExists = await User.findOne({ email });
-    if (userExists) {
+    const existing = await User.findOne({ email });
+    if (existing) {
       return res.status(400).json({ message: "Email already in use" });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       shopName,
       email,
-      password, // hashed via pre-save hook
+      password: hashedPassword,
     });
 
-    generateToken(res, user._id);
+    const token = createToken(user._id);
+
+    res.cookie("token", token, cookieOptions);
 
     res.status(201).json({
       message: "Registered successfully",
-      _id: user._id,
-      shopName: user.shopName,
-      email: user.email,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -60,51 +56,52 @@ export const login = async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    generateToken(res, user._id);
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    res.json({
-      message: "Logged in successfully",
-      _id: user._id,
-      shopName: user.shopName,
-      email: user.email,
-    });
+    const token = createToken(user._id);
+
+    res.cookie("token", token, cookieOptions);
+
+    res.json({ message: "Logged in successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 // ==========================
-// GET CURRENT USER (COOKIE AUTH)
+// GET CURRENT USER
 // ==========================
 export const getMe = async (req, res) => {
   try {
-    res.set("Cache-Control", "no-store");
+    const token = req.cookies.token;
+    if (!token) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
 
-    const user = await User.findById(req.user.id).select("-password");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select("-password");
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    res.status(401).json({ message: "Not authenticated" });
   }
 };
-
 
 // ==========================
 // LOGOUT USER
 // ==========================
 export const logout = (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-  });
-
+  res.clearCookie("token", cookieOptions);
   res.json({ message: "Logged out" });
 };
